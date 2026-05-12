@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      - id: validate-skills
+        name: Validate skill structure
+        language: python
+        entry: python .github/scripts/validate_skills.py
+        pass_filenames: false
+        additional_dependencies: [pyyaml==6.0.3]
+        always_run: true
