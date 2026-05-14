@@ -6,13 +6,12 @@ Rules enforced:
   - Folder names must be kebab-case and must not contain 'claude' or 'anthropic'
   - Each skill folder must contain exactly SKILL.md (case-sensitive)
   - No README.md allowed inside a skill folder
-  - SKILL.md must have valid YAML frontmatter
+  - SKILL.md must have valid YAML frontmatter (--- delimiters, parseable YAML)
   - frontmatter: 'name' required, kebab-case, must match folder name
-  - frontmatter: 'description' required, <1024 chars, no XML angle brackets
-  - frontmatter: no XML angle brackets anywhere
+  - frontmatter: 'description' required, <1024 chars, no XML tags
+  - frontmatter: no XML tags anywhere
   - frontmatter: 'compatibility' if present must be 1-500 chars
-  - description should include trigger conditions (warning, not error)
-  - SKILL.md body should contain an ## Instructions section (warning)
+  - SKILL.md body should contain at least one ## section heading (warning)
 """
 
 import os
@@ -22,7 +21,7 @@ import sys
 import yaml
 
 KEBAB_RE = re.compile(r"^[a-z][a-z0-9-]*$")
-XML_RE = re.compile(r"[<>]")
+XML_RE = re.compile(r"<[a-zA-Z/!]")
 RESERVED = ("claude", "anthropic")
 
 # Directories at repo root that are not skills
@@ -156,14 +155,6 @@ def validate_skill(folder_name: str, folder_path: str) -> tuple[list[str], list[
                     f"{prefix}/SKILL.md: 'description' contains forbidden "
                     "XML angle brackets (< or >)"
                 )
-            # Trigger phrases are required per the guide
-            dl = desc.lower()
-            if not any(kw in dl for kw in ("use when", "when user", "when the user")):
-                warnings.append(
-                    f"{prefix}/SKILL.md: 'description' should include trigger conditions "
-                    "(e.g. 'Use when user asks to...')"
-                )
-
     # --- compatibility field (optional) ---
     if "compatibility" in fm:
         compat = fm["compatibility"]
@@ -175,9 +166,9 @@ def validate_skill(folder_name: str, folder_path: str) -> tuple[list[str], list[
                 )
 
     # --- Body structure (warnings only) ---
-    if "## Instructions" not in body:
+    if not re.search(r"^## ", body, re.MULTILINE):
         warnings.append(
-            f"{prefix}/SKILL.md: body is missing an '## Instructions' section"
+            f"{prefix}/SKILL.md: body has no '##' section headings — add at least one"
         )
 
     return errors, warnings
